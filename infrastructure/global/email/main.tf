@@ -21,3 +21,19 @@ terraform {
 provider "aws" {
   region = "us-east-1"
 }
+
+module "ses" {
+  source  = "cloudposse/ses/aws"
+  version = "0.25.1"
+
+  domain        = "servicios-cires.net"
+  zone_id       = "Z06509101Z22NMKSMXDLL"
+  verify_dkim   = true
+  verify_domain = true
+
+  ses_group_enabled = false
+  ses_user_enabled  = false
+
+  namespace   = "cires"
+  environment = "us-east-1"
+}
