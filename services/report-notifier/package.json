@@ -1,0 +1,16 @@
+{
+  "name": "report-notifier",
+  "version": "1.0.0",
+  "description": "Send earthquake reports lambda",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "author": "Daniel Ibarrola",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
