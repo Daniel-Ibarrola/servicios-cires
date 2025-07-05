@@ -47,6 +47,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "bucket_lifecycle" {
     id = "delete-old-reports"
     status = "Enabled"
 
+    filter {}
+
     expiration {
       days = 30  # Delete objects after 30 days
     }
