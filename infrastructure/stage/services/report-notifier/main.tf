@@ -26,4 +26,5 @@ module "report-notifier" {
   source      = "../../../modules/services/report-notifier"
   bucket_name = "cires-reports-stage"
   environment = "stage"
+  verified_sender = "test@servicios-cires.net"
 }
