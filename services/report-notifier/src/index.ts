@@ -2,8 +2,12 @@ import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { SESClient, SendRawEmailCommand } from "@aws-sdk/client-ses";
 import { S3Event } from "aws-lambda";
 
-const s3Client = new S3Client({});
-const sesClient = new SESClient({});
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || "us-east-1",
+});
+const sesClient = new SESClient({
+  region: process.env.AWS_REGION || "us-east-1",
+});
 
 const SENDER_EMAIL = process.env.VERIFIED_SENDER;
 
@@ -37,9 +41,14 @@ export const handler = async (
   const s3Response = await s3Client.send(getObjectCmd);
   const rawEmailData = await streamToUint8Array(s3Response.Body);
 
+  let emailString = new TextDecoder().decode(rawEmailData);
+  // Remove the From header line if it exists
+  emailString = emailString.replace(/^From:.*\r?\n/m, "");
+  const modifiedEmailData = new TextEncoder().encode(emailString);
+
   const sendRawEmailCmd = new SendRawEmailCommand({
     Source: SENDER_EMAIL,
-    RawMessage: { Data: rawEmailData },
+    RawMessage: { Data: modifiedEmailData },
   });
   const sesResponse = await sesClient.send(sendRawEmailCmd);
 
