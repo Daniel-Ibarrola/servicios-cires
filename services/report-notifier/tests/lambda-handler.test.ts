@@ -45,9 +45,9 @@ describe("Lambda Handler", () => {
   });
 
   it("Should return 200 status code when email is valid", async () => {
-    const s3Event = createS3Event("test-gia-05.eml");
+    const s3Event = createS3Event("test_multiple_recipients.eml");
     const response = await handler(s3Event);
     expect(response.statusCode).toEqual(200);
-    expect(response.body).toContain("Email sent successfully");
+    expect(response.body).toContain("Email(s) sent successfully");
   });
 });

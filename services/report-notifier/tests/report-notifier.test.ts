@@ -5,6 +5,7 @@ import {
   FilterLogEventsCommand,
 } from "@aws-sdk/client-cloudwatch-logs";
 import { v4 as uuidv4 } from "uuid";
+import { createTestEml } from "./utils";
 
 const AWS_REGION = "us-east-1";
 const VERIFIED_SENDER = "test@servicios-cires.net";
@@ -13,16 +14,6 @@ const LOG_GROUP_NAME = "/aws/lambda/report-notifier-stage";
 
 const s3Client = new S3Client({ region: AWS_REGION });
 const logsClient = new CloudWatchLogsClient({ region: AWS_REGION });
-
-const createTestEml = (from: string, to: string, uniqueId: string): string => {
-  return `From: ${from}
-To: ${to}
-Subject: E2E Test Email - ${uniqueId}
-Content-Type: text/plain
-
-This is the body of the E2E test email.
-Test ID: ${uniqueId}`;
-};
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

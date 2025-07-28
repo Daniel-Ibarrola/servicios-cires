@@ -1,6 +1,6 @@
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { SESClient, SendRawEmailCommand } from "@aws-sdk/client-ses";
-import { S3Event } from "aws-lambda";
+import { S3Event, S3EventRecord } from "aws-lambda";
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || "us-east-1",
@@ -22,6 +22,56 @@ const streamToUint8Array = (stream: any): Promise<Uint8Array> =>
     stream.on("end", () => resolve(Buffer.concat(chunks)));
   });
 
+const getEmailFileContents = async (
+  s3EventRecord: S3EventRecord,
+): Promise<string> => {
+  const bucket = s3EventRecord.s3.bucket.name;
+  const key = decodeURIComponent(
+    s3EventRecord.s3.object.key.replace(/\+/g, " "),
+  );
+
+  console.log(`New .eml file detected. Bucket: ${bucket}, Key: ${key}`);
+
+  const getObjectCmd = new GetObjectCommand({ Bucket: bucket, Key: key });
+  const s3Response = await s3Client.send(getObjectCmd);
+  const rawEmailData = await streamToUint8Array(s3Response.Body);
+
+  return new TextDecoder().decode(rawEmailData);
+};
+
+export const removeEmailHeaders = (email: string): string => {
+  return email.replace(/^From:.*\r?\n/m, "").replace(/^BCC:.*\r?\n/m, "");
+};
+
+export const extractBCC = (email: string): string[] => {
+  const bccMatch = email.match(/^BCC:\s*(.*?)\r?\n/m);
+
+  if (!bccMatch) {
+    return [];
+  }
+
+  const bccValue = bccMatch[1].trim();
+  return bccValue.split(",").map((addr) => addr.trim());
+};
+
+export const replaceTo = (email: string, to: string): string => {
+  return email.replace(/^To:.*\r?\n/m, `To: ${to}\r\n`);
+};
+
+const sendEmail = async (email: string): Promise<string | undefined> => {
+  const encodedEmail = new TextEncoder().encode(email);
+  const sendRawEmailCmd = new SendRawEmailCommand({
+    Source: SENDER_EMAIL,
+    RawMessage: { Data: encodedEmail },
+  });
+  const sesResponse = await sesClient.send(sendRawEmailCmd);
+  return sesResponse.MessageId;
+};
+
+export const sleep = (ms: number): Promise<void> => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
 export const handler = async (
   event: S3Event,
 ): Promise<{ statusCode: number; body: string }> => {
@@ -31,32 +81,28 @@ export const handler = async (
 
   console.log("Received S3 event:", JSON.stringify(event, null, 2));
 
-  const record = event.Records[0];
-  const bucket = record.s3.bucket.name;
-  const key = decodeURIComponent(record.s3.object.key.replace(/\+/g, " "));
+  let email = await getEmailFileContents(event.Records[0]);
+  const bcc = extractBCC(email);
+  email = removeEmailHeaders(email);
 
-  console.log(`New .eml file detected. Bucket: ${bucket}, Key: ${key}`);
-
-  const getObjectCmd = new GetObjectCommand({ Bucket: bucket, Key: key });
-  const s3Response = await s3Client.send(getObjectCmd);
-  const rawEmailData = await streamToUint8Array(s3Response.Body);
-
-  let emailString = new TextDecoder().decode(rawEmailData);
-  // Remove the From header line if it exists
-  emailString = emailString.replace(/^From:.*\r?\n/m, "");
-  const modifiedEmailData = new TextEncoder().encode(emailString);
-
-  const sendRawEmailCmd = new SendRawEmailCommand({
-    Source: SENDER_EMAIL,
-    RawMessage: { Data: modifiedEmailData },
-  });
-  const sesResponse = await sesClient.send(sendRawEmailCmd);
-
-  const messageId = sesResponse.MessageId;
+  const messageId = await sendEmail(email);
   console.log(`SUCCESS: Email sent via SES. Message ID: ${messageId}`);
+
+  for (const bccAddr of bcc) {
+    await sleep(150);
+    const newEmail = replaceTo(email, bccAddr);
+    try {
+      const messageId = await sendEmail(newEmail);
+      console.log(
+        `SUCCESS: Email sent via SES. Message ID: ${messageId} (BCC: ${bccAddr})`,
+      );
+    } catch (e) {
+      console.log(`ERROR: Failed to send email to ${bccAddr}`);
+    }
+  }
 
   return {
     statusCode: 200,
-    body: `Email sent successfully! Message ID: ${messageId}`,
+    body: `Email(s) sent successfully!`,
   };
 };
