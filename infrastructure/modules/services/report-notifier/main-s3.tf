@@ -54,3 +54,62 @@ resource "aws_s3_bucket_lifecycle_configuration" "bucket_lifecycle" {
     }
   }
 }
+
+resource "aws_s3_bucket" "cloudtrail_logs" {
+  bucket = "${var.bucket_name}-cloudtrail-logs"
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+data "aws_iam_policy_document" "cloudtrail_s3_policy" {
+  statement {
+    sid = "AWSCloudTrailAclCheck"
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+    actions   = ["s3:GetBucketAcl"]
+    resources = [aws_s3_bucket.cloudtrail_logs.arn]
+  }
+
+  statement {
+    sid = "AWSCloudTrailWrite"
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.cloudtrail_logs.arn}/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-acl"
+      values   = ["bucket-owner-full-control"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "cloudtrail_logs_policy" {
+  bucket = aws_s3_bucket.cloudtrail_logs.id
+  policy = data.aws_iam_policy_document.cloudtrail_s3_policy.json
+}
+
+resource "aws_cloudtrail" "s3_events" {
+  name           = "${var.bucket_name}-s3-trail"
+  s3_bucket_name = aws_s3_bucket.cloudtrail_logs.id
+
+  # The event_selector specifies that we want to log "WriteOnly" data events
+  # for the earthquake_reports bucket. This includes PutObject events.
+  event_selector {
+    read_write_type           = "WriteOnly"
+    include_management_events = false
+
+    data_resource {
+      type   = "AWS::S3::Object"
+      values = ["${aws_s3_bucket.earthquake_reports.arn}/"]
+    }
+  }
+
+  depends_on = [aws_s3_bucket_policy.cloudtrail_logs_policy]
+}
+
