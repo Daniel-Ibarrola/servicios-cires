@@ -45,12 +45,6 @@ resource "aws_iam_role_policy_attachment" "lambda_ses" {
   policy_arn = aws_iam_policy.lambda_ses_policy.arn
 }
 
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/../../../../services/report-notifier/dist"
-  output_path = "${path.module}/function.zip"
-}
-
 resource "aws_iam_role" "lambda_execution" {
   name               = "lambda_execution_role_${var.environment}"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
@@ -77,8 +71,8 @@ resource "aws_lambda_function" "notifier" {
   handler       = "index.handler"
   runtime       = "nodejs22.x"
 
-  filename      = data.archive_file.lambda_zip.output_path
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  s3_bucket = aws_s3_bucket.report_notifier_source_code.bucket
+  s3_key = "report-notifier.zip"
 
   environment {
     variables = {

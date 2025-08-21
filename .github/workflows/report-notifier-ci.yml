@@ -12,9 +12,19 @@ on:
       - 'services/report-notifier/**'
 
 jobs:
-  test-and-build:
-    name: Test and Build
+  test-build-and-upload:
+    name: Test, Build and Upload Artifact
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    environment:
+      name: ${{ github.ref_name == 'main' && 'prod' || 'stage' }}
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
 
     steps:
       - name: Checkout repository
@@ -38,3 +48,15 @@ jobs:
       - name: Build Code
         working-directory: ./services/report-notifier
         run: npm run build
+
+      - name: Package Lambda function
+        run: zip -j function.zip services/report-notifier/dist/*
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+
+      - name: Upload artifact to S3
+        run: aws s3 cp function.zip s3://${{ vars.S3_ARTIFACT_BUCKET }}/report-notifier.zip
