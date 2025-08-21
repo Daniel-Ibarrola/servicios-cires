@@ -16,3 +16,5 @@ yarn-error.log*
 *.tfstate
 *.tfstate.backup
 function.zip
+
+TODO.md
