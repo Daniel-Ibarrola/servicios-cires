@@ -97,16 +97,7 @@ data "tls_certificate" "github" {
 
 locals {
   github_owner = "Daniel-Ibarrola"
-  allowed_repos_branches = [
-    {
-      repo = "servicios-cires"
-      branch = "main"
-    },
-    {
-      repo = "servicios-cires"
-      branch = "develop"
-    }
-  ]
+  allowed_repos = ["servicios-cires"]
 }
 
 data "aws_iam_policy_document" "assume_role_policy" {
@@ -120,13 +111,13 @@ data "aws_iam_policy_document" "assume_role_policy" {
     }
 
     condition {
-      test     = "StringEquals"
+      test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       # The repos and branches defined in allowed_repos_branches
       # will be able to assume this IAM role
       values = [
-        for a in local.allowed_repos_branches :
-        "repo:${local.github_owner}/${a["repo"]}:ref:refs/heads/${a["branch"]}"
+        for repo in local.allowed_repos :
+        "repo:${local.github_owner}/${repo}:*"
       ]
     }
   }
