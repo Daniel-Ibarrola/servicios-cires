@@ -5,7 +5,7 @@ import {
   FilterLogEventsCommand,
 } from "@aws-sdk/client-cloudwatch-logs";
 import { v4 as uuidv4 } from "uuid";
-import { createTestEml } from "./utils";
+import { createTestEml } from "../utils/create-test-eml";
 
 const AWS_REGION = "us-east-1";
 const VERIFIED_SENDER = "test@servicios-cires.net";
