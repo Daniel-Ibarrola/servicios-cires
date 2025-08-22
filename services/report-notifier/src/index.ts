@@ -9,8 +9,6 @@ const sesClient = new SESClient({
   region: process.env.AWS_REGION || "us-east-1",
 });
 
-const SENDER_EMAIL = process.env.VERIFIED_SENDER;
-
 /**
  * Helper to convert a stream to a Uint8Array.
  */
@@ -58,10 +56,13 @@ export const replaceTo = (email: string, to: string): string => {
   return email.replace(/^To:.*\r?\n/m, `To: ${to}\r\n`);
 };
 
-const sendEmail = async (email: string): Promise<string | undefined> => {
+const sendEmail = async (
+  email: string,
+  sender: string,
+): Promise<string | undefined> => {
   const encodedEmail = new TextEncoder().encode(email);
   const sendRawEmailCmd = new SendRawEmailCommand({
-    Source: SENDER_EMAIL,
+    Source: sender,
     RawMessage: { Data: encodedEmail },
   });
   const sesResponse = await sesClient.send(sendRawEmailCmd);
@@ -75,7 +76,9 @@ export const sleep = (ms: number): Promise<void> => {
 export const handler = async (
   event: S3Event,
 ): Promise<{ statusCode: number; body: string }> => {
-  if (!SENDER_EMAIL) {
+  const senderEmail = process.env.VERIFIED_SENDER;
+
+  if (!senderEmail) {
     throw new Error("VERIFIED_SENDER environment variable is not set");
   }
 
@@ -85,24 +88,33 @@ export const handler = async (
   const bcc = extractBCC(email);
   email = removeEmailHeaders(email);
 
-  const messageId = await sendEmail(email);
+  const messageId = await sendEmail(email, senderEmail);
+  let sentEmailCount = 1;
+
   console.log(`SUCCESS: Email sent via SES. Message ID: ${messageId}`);
+  console.log("BBC addresses: ", bcc);
 
   for (const bccAddr of bcc) {
     await sleep(150);
     const newEmail = replaceTo(email, bccAddr);
     try {
-      const messageId = await sendEmail(newEmail);
+      const messageId = await sendEmail(newEmail, senderEmail);
       console.log(
         `SUCCESS: Email sent via SES. Message ID: ${messageId} (BCC: ${bccAddr})`,
       );
+      sentEmailCount++;
     } catch (e) {
       console.log(`ERROR: Failed to send email to ${bccAddr}`);
     }
   }
 
+  const totalEmails = 1 + bcc.length;
+  const bodyMessage = `Sent ${sentEmailCount} out of ${totalEmails} email(s) successfully`;
+
+  console.log(bodyMessage);
+
   return {
     statusCode: 200,
-    body: `Email(s) sent successfully!`,
+    body: bodyMessage,
   };
 };
