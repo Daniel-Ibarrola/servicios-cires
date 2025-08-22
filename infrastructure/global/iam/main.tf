@@ -203,20 +203,7 @@ data "aws_iam_policy_document" "terraform_permissions" {
     sid    = "S3"
     effect = "Allow"
     actions = [
-      "s3:CreateBucket",
-      "s3:DeleteBucket",
-      "s3:GetBucketLocation",
-      "s3:PutLifecycleConfiguration",
-      "s3:GetLifecycleConfiguration",
-      "s3:PutBucketPublicAccessBlock",
-      "s3:GetBucketPublicAccessBlock",
-      "s3:PutBucketNotification",
-      "s3:GetBucketNotificationConfiguration",
-      "s3:PutBucketPolicy",
-      "s3:GetBucketPolicy",
-      "s3:DeleteBucketPolicy",
-      "s3:GetBucketAcl",
-      "s3:GetBucketCors",
+      "s3:*"
     ]
     resources = [
       "arn:aws:s3:::*"
@@ -242,13 +229,7 @@ data "aws_iam_policy_document" "terraform_permissions" {
     sid    = "CloudTrail"
     effect = "Allow"
     actions = [
-      "cloudtrail:CreateTrail",
-      "cloudtrail:DeleteTrail",
-      "cloudtrail:GetTrail",
-      "cloudtrail:UpdateTrail",
-      "cloudtrail:PutEventSelectors",
-      "cloudtrail:DescribeTrails",
-      "cloudtrail:GetTrailStatus"
+      "cloudtrail:*" # Broad permissions for CloudTrail
     ]
     resources = ["*"]
   }
