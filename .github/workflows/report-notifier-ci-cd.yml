@@ -66,6 +66,9 @@ jobs:
       - name: Package Lambda function
         run: zip -j function.zip services/report-notifier/dist/*
 
+      - name: Calculate Lambda source hash and set as TF_VAR
+        run: echo "TF_VAR_source_code_hash=$(openssl dgst -sha256 -binary function.zip | base64)" >> $GITHUB_ENV
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
