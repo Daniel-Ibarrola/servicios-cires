@@ -6,15 +6,37 @@ on:
       - main
       - develop
     paths:
+      - 'infrastructure/modules/services/report-notifier/**'
+      - 'infrastructure/prod/services/report-notifier/**'
+      - 'infrastructure/stage/services/report-notifier/**'
       - 'services/report-notifier/**'
+      - '.github/workflows/report-notifier/terraform.yml'
   pull_request:
     paths:
+      - 'infrastructure/modules/services/report-notifier/**'
+      - 'infrastructure/prod/services/report-notifier/**'
+      - 'infrastructure/stage/services/report-notifier/**'
       - 'services/report-notifier/**'
+      - '.github/workflows/report-notifier/terraform.yml'
 
 jobs:
-  test-and-build:
-    name: Test and Build
+  test-build-and-upload:
+    name: Test, Build and Upload Artifact
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    environment:
+      name: ${{ github.ref_name == 'main' && 'prod' || 'stage' }}
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
+    env:
+      ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
+      AWS_REGION: us-east-1
 
     steps:
       - name: Checkout repository
@@ -38,3 +60,15 @@ jobs:
       - name: Build Code
         working-directory: ./services/report-notifier
         run: npm run build
+
+      - name: Package Lambda function
+        run: zip -j function.zip services/report-notifier/dist/*
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload artifact to S3
+        run: aws s3 cp function.zip s3://${{ vars.S3_ARTIFACT_BUCKET }}/report-notifier.zip

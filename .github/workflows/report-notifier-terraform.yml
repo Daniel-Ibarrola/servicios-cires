@@ -1,27 +1,12 @@
 name: Deploy Report Notifier Infrastructure
 
 on:
-  push:
+  workflow_run:
+    workflows: [ 'Report Notifier CI' ]
+    types: [ completed ]
     branches:
-      - main
       - develop
-    paths:
-      - 'infrastructure/modules/services/report-notifier/**'
-      - 'infrastructure/prod/services/report-notifier/**'
-      - 'infrastructure/stage/services/report-notifier/**'
-      - 'services/report-notifier/**'
-      - '.github/workflows/report-notifier/terraform.yml'
-  pull_request:
-    branches:
       - main
-      - develop
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'infrastructure/modules/services/report-notifier/**'
-      - 'infrastructure/prod/services/report-notifier/**'
-      - 'infrastructure/stage/services/report-notifier/**'
-      - 'services/report-notifier/**'
-      - '.github/workflows/report-notifier/terraform.yml'
 
 permissions:
   id-token: write       # Required for OIDC authentication with AWS
@@ -86,7 +71,6 @@ jobs:
         id: plan
         run: terraform plan -no-color -out=tfplan
         working-directory: ${{ env.TF_DIR }}
-        continue-on-error: true # Allow plan to fail without stopping the workflow
 
       - name: Add Plan to PR Comment
         if: github.event_name == 'pull_request'
@@ -119,10 +103,6 @@ jobs:
                 body: planOutput
               });
             }
-
-      - name: Terraform Plan Status Check
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
 
       - name: Terraform Apply
         if: github.event_name == 'push'

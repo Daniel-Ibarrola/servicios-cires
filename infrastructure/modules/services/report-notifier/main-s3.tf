@@ -6,6 +6,7 @@ terraform {
     }
   }
 }
+
 resource "aws_s3_bucket" "earthquake_reports" {
   bucket = var.bucket_name
   lifecycle {
@@ -113,3 +114,6 @@ resource "aws_cloudtrail" "s3_events" {
   depends_on = [aws_s3_bucket_policy.cloudtrail_logs_policy]
 }
 
+resource "aws_s3_bucket" "report_notifier_source_code" {
+  bucket = "cires-report-notifier-source-code-${var.environment}"
+}
