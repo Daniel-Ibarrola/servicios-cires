@@ -112,6 +112,7 @@ export const handler = async (
   const bodyMessage = `Sent ${sentEmailCount} out of ${totalEmails} email(s) successfully`;
 
   console.log(bodyMessage);
+  console.log("=========================================");
 
   return {
     statusCode: 200,
