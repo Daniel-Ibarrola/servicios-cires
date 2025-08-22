@@ -146,6 +146,22 @@ data "aws_iam_policy_document" "terraform_permissions" {
   }
 
   statement {
+    sid    = "Artifacts"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::cires-report-notifier-source-code-stage",
+      "arn:aws:s3:::cires-report-notifier-source-code-stage/*",
+      "arn:aws:s3:::cires-report-notifier-source-code-prod",
+      "arn:aws:s3:::cires-report-notifier-source-code-prod/*"
+    ]
+  }
+
+  statement {
     sid    = "TerraformStateLock"
     effect = "Allow"
     actions = [
