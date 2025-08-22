@@ -6,12 +6,18 @@ on:
       - main
       - develop
     paths:
+      - 'infrastructure/modules/services/report-notifier/**'
+      - 'infrastructure/prod/services/report-notifier/**'
+      - 'infrastructure/stage/services/report-notifier/**'
       - 'services/report-notifier/**'
-      - '.github/workflows/report-notifier/report-notifier-ci.yml'
+      - '.github/workflows/report-notifier/terraform.yml'
   pull_request:
     paths:
+      - 'infrastructure/modules/services/report-notifier/**'
+      - 'infrastructure/prod/services/report-notifier/**'
+      - 'infrastructure/stage/services/report-notifier/**'
       - 'services/report-notifier/**'
-      - '.github/workflows/report-notifier/report-notifier-ci.yml'
+      - '.github/workflows/report-notifier/terraform.yml'
 
 jobs:
   test-build-and-upload:
