@@ -214,13 +214,7 @@ data "aws_iam_policy_document" "terraform_permissions" {
     sid    = "Lambda"
     effect = "Allow"
     actions = [
-      "lambda:CreateFunction",
-      "lambda:GetFunction",
-      "lambda:DeleteFunction",
-      "lambda:UpdateFunctionConfiguration",
-      "lambda:UpdateFunctionCode",
-      "lambda:AddPermission",
-      "lambda:RemovePermission"
+      "lambda:*",
     ]
     resources = ["*"]
   }
@@ -229,7 +223,7 @@ data "aws_iam_policy_document" "terraform_permissions" {
     sid    = "CloudTrail"
     effect = "Allow"
     actions = [
-      "cloudtrail:*" # Broad permissions for CloudTrail
+      "cloudtrail:*"
     ]
     resources = ["*"]
   }
