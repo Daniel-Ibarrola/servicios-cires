@@ -191,7 +191,10 @@ data "aws_iam_policy_document" "terraform_permissions" {
       "iam:DetachRolePolicy",
       "iam:AttachUserPolicy",
       "iam:DetachUserPolicy",
-      "iam:PassRole"
+      "iam:PassRole",
+      "iam:GetPolicyVersion",
+      "iam:ListRolePolicies",
+      "iam:ListAttachedRolePolicies"
     ]
     resources = ["*"]
   }
@@ -200,18 +203,7 @@ data "aws_iam_policy_document" "terraform_permissions" {
     sid    = "S3"
     effect = "Allow"
     actions = [
-      "s3:CreateBucket",
-      "s3:DeleteBucket",
-      "s3:GetBucketLocation",
-      "s3:PutLifecycleConfiguration",
-      "s3:GetLifecycleConfiguration",
-      "s3:PutBucketPublicAccessBlock",
-      "s3:GetBucketPublicAccessBlock",
-      "s3:PutBucketNotification",
-      "s3:GetBucketNotificationConfiguration",
-      "s3:PutBucketPolicy",
-      "s3:GetBucketPolicy",
-      "s3:DeleteBucketPolicy"
+      "s3:*"
     ]
     resources = [
       "arn:aws:s3:::*"
@@ -222,13 +214,7 @@ data "aws_iam_policy_document" "terraform_permissions" {
     sid    = "Lambda"
     effect = "Allow"
     actions = [
-      "lambda:CreateFunction",
-      "lambda:GetFunction",
-      "lambda:DeleteFunction",
-      "lambda:UpdateFunctionConfiguration",
-      "lambda:UpdateFunctionCode",
-      "lambda:AddPermission",
-      "lambda:RemovePermission"
+      "lambda:*",
     ]
     resources = ["*"]
   }
@@ -237,11 +223,7 @@ data "aws_iam_policy_document" "terraform_permissions" {
     sid    = "CloudTrail"
     effect = "Allow"
     actions = [
-      "cloudtrail:CreateTrail",
-      "cloudtrail:DeleteTrail",
-      "cloudtrail:GetTrail",
-      "cloudtrail:UpdateTrail",
-      "cloudtrail:PutEventSelectors"
+      "cloudtrail:*"
     ]
     resources = ["*"]
   }

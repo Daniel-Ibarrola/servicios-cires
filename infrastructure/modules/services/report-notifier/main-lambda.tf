@@ -73,6 +73,7 @@ resource "aws_lambda_function" "notifier" {
 
   s3_bucket = aws_s3_bucket.report_notifier_source_code.bucket
   s3_key = "report-notifier.zip"
+  source_code_hash = var.source_code_hash
 
   environment {
     variables = {

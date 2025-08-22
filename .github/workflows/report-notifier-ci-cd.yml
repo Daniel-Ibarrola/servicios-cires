@@ -10,14 +10,14 @@ on:
       - 'infrastructure/prod/services/report-notifier/**'
       - 'infrastructure/stage/services/report-notifier/**'
       - 'services/report-notifier/**'
-      - '.github/workflows/report-notifier/report-notifier-ci-cd.yml'
+      - '.github/workflows/report-notifier-ci-cd.yml'
   pull_request:
     paths:
       - 'infrastructure/modules/services/report-notifier/**'
       - 'infrastructure/prod/services/report-notifier/**'
       - 'infrastructure/stage/services/report-notifier/**'
       - 'services/report-notifier/**'
-      - '.github/workflows/report-notifier/report-notifier-ci-cd.yml'
+      - '.github/workflows/report-notifier-ci-cd.yml'
 
 permissions:
   id-token: write       # Required for OIDC authentication with AWS
@@ -65,6 +65,9 @@ jobs:
 
       - name: Package Lambda function
         run: zip -j function.zip services/report-notifier/dist/*
+
+      - name: Calculate Lambda source hash and set as TF_VAR
+        run: echo "TF_VAR_source_code_hash=$(openssl dgst -sha256 -binary function.zip | base64)" >> $GITHUB_ENV
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
