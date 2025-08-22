@@ -1,0 +1,161 @@
+name: Report Notifier CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'infrastructure/modules/services/report-notifier/**'
+      - 'infrastructure/prod/services/report-notifier/**'
+      - 'infrastructure/stage/services/report-notifier/**'
+      - 'services/report-notifier/**'
+      - '.github/workflows/report-notifier-ci-cd.yml'
+  pull_request:
+    paths:
+      - 'infrastructure/modules/services/report-notifier/**'
+      - 'infrastructure/prod/services/report-notifier/**'
+      - 'infrastructure/stage/services/report-notifier/**'
+      - 'services/report-notifier/**'
+      - '.github/workflows/report-notifier-ci-cd.yml'
+
+permissions:
+  id-token: write       # Required for OIDC authentication with AWS
+  contents: read        # Required to check out the repository's code
+  pull-requests: write  # Required to comment on pull requests
+
+jobs:
+  report-notifier-ci-cd:
+    name: Test, Build and Deploy Report Notifier
+    runs-on: ubuntu-latest
+
+    environment:
+      name: ${{ github.ref_name == 'main' && 'prod' || 'stage' }}
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
+    env:
+      ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
+      AWS_REGION: us-east-1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.6.0'
+          cache: 'npm'
+          cache-dependency-path: services/report-notifier/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ./services/report-notifier
+        run: npm install
+
+      - name: Run Unit Tests
+        working-directory: ./services/report-notifier
+        run: npm run test:ci
+
+      - name: Build Code
+        working-directory: ./services/report-notifier
+        run: npm run build
+
+      - name: Package Lambda function
+        run: zip -j function.zip services/report-notifier/dist/*
+
+      - name: Calculate Lambda source hash and set as TF_VAR
+        run: echo "TF_VAR_source_code_hash=$(openssl dgst -sha256 -binary function.zip | base64)" >> $GITHUB_ENV
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload artifact to S3
+        run: aws s3 cp function.zip s3://${{ vars.S3_ARTIFACT_BUCKET }}/report-notifier.zip
+      - name: Set Terraform Working Directory and Log Message
+        id: set-vars
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            if [[ "${{ github.base_ref }}" == "main" ]]; then
+              echo "TF_DIR=infrastructure/prod/services/report-notifier" >> $GITHUB_ENV
+              echo "LOG_MESSAGE=Planning for PRODUCTION environment (Pull Request)" >> $GITHUB_ENV
+            elif [[ "${{ github.base_ref }}" == "develop" ]]; then
+              echo "TF_DIR=infrastructure/stage/services/report-notifier" >> $GITHUB_ENV
+              echo "LOG_MESSAGE=Planning for STAGE environment (Pull Request)" >> $GITHUB_ENV
+            fi
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            if [[ "${{ github.ref_name }}" == "main" ]]; then
+              echo "TF_DIR=infrastructure/prod/services/report-notifier" >> $GITHUB_ENV
+              echo "LOG_MESSAGE=Applying for PRODUCTION environment" >> $GITHUB_ENV
+            elif [[ "${{ github.ref_name }}" == "develop" ]]; then
+              echo "TF_DIR=infrastructure/stage/services/report-notifier" >> $GITHUB_ENV
+              echo "LOG_MESSAGE=Applying for STAGE environment" >> $GITHUB_ENV
+            fi
+          fi
+
+      - name: Log Intent
+        run: echo "${{ env.LOG_MESSAGE }}"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+          terraform_version: 1.12.2
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: ${{ env.TF_DIR }}
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+        working-directory: ${{ env.TF_DIR }}
+
+      - name: Add Plan to PR Comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes('Terraform Plan')
+            });
+            const planOutput = `## Terraform Plan for \`${process.env.TF_DIR}\`
+            \`\`\`terraform\n${{ steps.plan.outputs.stdout || 'No changes.' }}\n\`\`\`
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: planOutput
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: planOutput
+              });
+            }
+
+      - name: Terraform Apply
+        if: github.event_name == 'push'
+        run: terraform apply -auto-approve tfplan
+        working-directory: ${{ env.TF_DIR }}

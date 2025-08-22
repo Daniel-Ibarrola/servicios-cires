@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createTestEml } from "./utils";
-import { removeEmailHeaders, replaceTo } from "../src";
+import { createTestEml } from "../utils/create-test-eml";
+import { removeEmailHeaders, replaceTo } from "../../src";
 
 describe("removeEmailHeaders", () => {
   it("Should remove the From header line if it exists", () => {
@@ -20,7 +20,6 @@ describe("removeEmailHeaders", () => {
       "123345",
       "triton@example.com, sanson@example.com",
     );
-    console.log(email);
     const formatted = removeEmailHeaders(email);
     expect(formatted).not.toContain(
       "BCC: triton@example.com, sanson@example.com",
@@ -35,7 +34,6 @@ describe("replaceTo", () => {
       "yourmother@example.com",
       "123345",
     );
-    console.log(email);
     const formatted = replaceTo(email, "triton@example.com");
     expect(formatted).not.toContain("To: yourmother@example.com");
     expect(formatted).toContain("To: triton@example.com");

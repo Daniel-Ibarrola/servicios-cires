@@ -5,6 +5,7 @@
   "main": "src/index.ts",
   "scripts": {
     "build": "tsc",
+    "test:ci": "vitest run tests/unit",
     "test": "vitest"
   },
   "author": "Daniel Ibarrola",
