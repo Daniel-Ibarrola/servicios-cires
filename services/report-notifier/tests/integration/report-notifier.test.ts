@@ -17,6 +17,29 @@ const logsClient = new CloudWatchLogsClient({ region: AWS_REGION });
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * @group E2E Tests - Report Notifier
+ * @description
+ * This test suite performs end-to-end (E2E) testing of the report notifier service.
+ * It simulates a real-world scenario by uploading a test email file to an S3 bucket,
+ * which is expected to trigger the deployed AWS Lambda function.
+ *
+ * HOW IT WORKS:
+ * 1. A unique test email (.eml file) is created and uploaded to the specified S3 bucket.
+ * 2. This upload triggers the `report-notifier` Lambda function in the AWS environment.
+ * 3. The test then polls the associated CloudWatch Log Group, waiting for a success
+ *    log message from the Lambda function. This message indicates that the email
+ *    was processed and sent via SES.
+ *
+ * PLEASE BE AWARE:
+ * - This is a REAL E2E test that interacts with a live AWS environment.
+ * - It requires AWS credentials with the necessary permissions to be configured where
+ *   the tests are run.
+ * - It depends on the `report-notifier-stage` Lambda, S3 bucket, and CloudWatch
+ *   Log Group being deployed and correctly configured in AWS.
+ * - The test has a long timeout to account for the asynchronous nature of Lambda
+ *   invocation and log propagation in CloudWatch.
+ */
 describe("Report Notifier", () => {
   test(
     "Sends email with object contents when uploaded to bucket",
