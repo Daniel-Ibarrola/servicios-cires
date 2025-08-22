@@ -191,7 +191,9 @@ data "aws_iam_policy_document" "terraform_permissions" {
       "iam:DetachRolePolicy",
       "iam:AttachUserPolicy",
       "iam:DetachUserPolicy",
-      "iam:PassRole"
+      "iam:PassRole",
+      "iam:GetPolicyVersion",
+      "iam:ListRolePolicies"
     ]
     resources = ["*"]
   }
@@ -211,7 +213,8 @@ data "aws_iam_policy_document" "terraform_permissions" {
       "s3:GetBucketNotificationConfiguration",
       "s3:PutBucketPolicy",
       "s3:GetBucketPolicy",
-      "s3:DeleteBucketPolicy"
+      "s3:DeleteBucketPolicy",
+      "s3:GetBucketAcl",
     ]
     resources = [
       "arn:aws:s3:::*"
@@ -241,7 +244,8 @@ data "aws_iam_policy_document" "terraform_permissions" {
       "cloudtrail:DeleteTrail",
       "cloudtrail:GetTrail",
       "cloudtrail:UpdateTrail",
-      "cloudtrail:PutEventSelectors"
+      "cloudtrail:PutEventSelectors",
+      "cloudtrail:DescribeTrails"
     ]
     resources = ["*"]
   }
