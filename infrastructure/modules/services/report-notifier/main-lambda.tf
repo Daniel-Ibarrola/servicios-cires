@@ -70,6 +70,7 @@ resource "aws_lambda_function" "notifier" {
   role          = aws_iam_role.lambda_execution.arn
   handler       = "index.handler"
   runtime       = "nodejs22.x"
+  timeout = 30
 
   s3_bucket = aws_s3_bucket.report_notifier_source_code.bucket
   s3_key = "report-notifier.zip"
