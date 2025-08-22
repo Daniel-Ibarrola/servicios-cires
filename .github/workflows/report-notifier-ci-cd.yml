@@ -10,14 +10,14 @@ on:
       - 'infrastructure/prod/services/report-notifier/**'
       - 'infrastructure/stage/services/report-notifier/**'
       - 'services/report-notifier/**'
-      - '.github/workflows/report-notifier/report-notifier-ci-cd.yml'
+      - '.github/workflows/report-notifier-ci-cd.yml'
   pull_request:
     paths:
       - 'infrastructure/modules/services/report-notifier/**'
       - 'infrastructure/prod/services/report-notifier/**'
       - 'infrastructure/stage/services/report-notifier/**'
       - 'services/report-notifier/**'
-      - '.github/workflows/report-notifier/report-notifier-ci-cd.yml'
+      - '.github/workflows/report-notifier-ci-cd.yml'
 
 permissions:
   id-token: write       # Required for OIDC authentication with AWS
