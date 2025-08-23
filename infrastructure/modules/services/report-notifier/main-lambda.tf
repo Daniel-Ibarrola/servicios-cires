@@ -65,6 +65,27 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+data "aws_iam_policy_document" "lambda_dynamodb_policy" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem"
+    ]
+    resources = [aws_dynamodb_table.event_tracker.arn]
+  }
+}
+
+resource "aws_iam_policy" "lambda_dynamodb_policy" {
+  name   = "lambda_dynamodb_access_policy_${var.environment}"
+  policy = data.aws_iam_policy_document.lambda_dynamodb_policy.json
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_dynamodb" {
+  role       = aws_iam_role.lambda_execution.name
+  policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
+}
+
 resource "aws_lambda_function" "notifier" {
   function_name = "report-notifier-${var.environment}"
   role          = aws_iam_role.lambda_execution.arn
@@ -80,6 +101,7 @@ resource "aws_lambda_function" "notifier" {
     variables = {
       ENVIRONMENT = var.environment
       VERIFIED_SENDER = var.verified_sender
+      EVENT_TRACKER_TABLE_NAME = aws_dynamodb_table.event_tracker.name
     }
   }
 
