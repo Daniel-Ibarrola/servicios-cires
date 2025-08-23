@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createTestEml } from "../utils/create-test-eml";
-import { extractBCC } from "../../src";
+
+import { extractBCC } from "../../src/email";
 
 describe("extractBcc", () => {
   it("Returns an array with the bcc emails", () => {

@@ -10,12 +10,14 @@ import {
 import { Readable } from "stream";
 import { S3Client } from "@aws-sdk/client-s3";
 import { SESClient, SendRawEmailCommand } from "@aws-sdk/client-ses";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { handler } from "../../src";
 import { createS3Event } from "../utils/s3-event";
 import { createTestEml } from "../utils/create-test-eml";
 
 let s3SendSpy: MockInstance;
 let sesSendSpy: MockInstance;
+let dynamoDBSpy: MockInstance;
 
 describe("Lambda Handler - Unit Tests", () => {
   const originalSenderEnv = process.env.VERIFIED_SENDER;
@@ -23,8 +25,9 @@ describe("Lambda Handler - Unit Tests", () => {
   beforeEach(() => {
     s3SendSpy = vi.spyOn(S3Client.prototype, "send");
     sesSendSpy = vi.spyOn(SESClient.prototype, "send");
-
+    dynamoDBSpy = vi.spyOn(DynamoDBClient.prototype, "send");
     process.env.VERIFIED_SENDER = "sender@test.com";
+    process.env.EVENT_TRACKER_TABLE_NAME = "report-notifier-events-test";
   });
 
   afterEach(() => {
@@ -47,10 +50,19 @@ describe("Lambda Handler - Unit Tests", () => {
     );
   });
 
+  it("Should throw an error if EVENT_TRACKER_TABLE_NAME is not set", async () => {
+    delete process.env.EVENT_TRACKER_TABLE_NAME;
+    const s3Event = createS3Event("test.eml");
+    await expect(handler(s3Event)).rejects.toThrow(
+      "EVENT_TRACKER_TABLE_NAME environment variable is not set",
+    );
+  });
+
   it("Should return 200 and send one email for a valid file with no BCC", async () => {
     const emlContent = createTestEml("from@test.com", "to@test.com", "no-bcc");
     mockS3GetObject(emlContent);
     sesSendSpy.mockResolvedValue({ MessageId: "fake-id" });
+    dynamoDBSpy.mockResolvedValue(undefined);
     const s3Event = createS3Event("test.eml");
 
     const response = await handler(s3Event);
@@ -72,6 +84,7 @@ describe("Lambda Handler - Unit Tests", () => {
     );
     mockS3GetObject(emlContent);
     sesSendSpy.mockResolvedValue({ MessageId: "fake-id" });
+    dynamoDBSpy.mockResolvedValue(undefined);
     const s3Event = createS3Event("test.eml");
 
     const response = await handler(s3Event);
@@ -98,6 +111,7 @@ describe("Lambda Handler - Unit Tests", () => {
     );
     mockS3GetObject(emlContent);
     sesSendSpy.mockResolvedValue({ MessageId: "fake-id" });
+    dynamoDBSpy.mockResolvedValue(undefined);
     const s3Event = createS3Event("test.eml");
 
     const response = await handler(s3Event);
@@ -121,6 +135,7 @@ describe("Lambda Handler - Unit Tests", () => {
     );
     mockS3GetObject(emlContent);
     sesSendSpy.mockResolvedValue({ MessageId: "fake-id" });
+    dynamoDBSpy.mockResolvedValue(undefined);
     const s3Event = createS3Event("test.eml");
 
     await handler(s3Event);
@@ -144,5 +159,19 @@ describe("Lambda Handler - Unit Tests", () => {
       secondCallCommand.input.RawMessage.Data,
     );
     expect(secondCallEmail).toContain(`To: ${bccAddress}`);
+  });
+
+  it("Should not send an email if it was already sent", async () => {
+    const emlContent = createTestEml("from@test.com", "to@test.com", "no-bcc");
+    mockS3GetObject(emlContent);
+    sesSendSpy.mockResolvedValue({ MessageId: "fake-id" });
+    dynamoDBSpy.mockResolvedValue({ Item: { eventID: { S: "test-id" } } });
+    const s3Event = createS3Event("test.eml");
+    mockS3GetObject(emlContent);
+
+    const response = await handler(s3Event);
+
+    expect(response.statusCode).toEqual(200);
+    expect(response.body).toContain("Event already processed");
   });
 });
