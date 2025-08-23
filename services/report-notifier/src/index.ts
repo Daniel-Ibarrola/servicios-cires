@@ -8,6 +8,8 @@ export const handler = async (
 ): Promise<{ statusCode: number; body: string }> => {
   const senderEmail = process.env.VERIFIED_SENDER;
   const tableName = process.env.EVENT_TRACKER_TABLE_NAME;
+  console.log("Sender email: ", senderEmail);
+  console.log("Table name: ", tableName);
 
   if (!senderEmail) {
     throw new Error("VERIFIED_SENDER environment variable is not set");
@@ -32,7 +34,7 @@ export const handler = async (
   const [sentEmailCount, totalEmails] = await sendAllEmails(email, senderEmail);
 
   await recordEventInDB(eventKey, tableName);
-  console.log("Event recorded in DB");
+  console.log(`Event with key ${eventKey} recorded in DB`);
 
   const bodyMessage = `Sent ${sentEmailCount} out of ${totalEmails} email(s) successfully`;
   console.log(bodyMessage);

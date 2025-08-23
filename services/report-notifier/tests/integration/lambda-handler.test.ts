@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { handler } from "../../src";
 import { createS3Event } from "../utils/s3-event";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * @group Integration Tests - Lambda Handler
@@ -15,11 +16,15 @@ import { createS3Event } from "../utils/s3-event";
  */
 
 describe("Lambda Handler", () => {
-  it("Should return 200 status code when email is valid", async () => {
-    // The object should exist in S3 for this to work
-    const s3Event = createS3Event("test_multiple_recipients.eml");
+  it("Should process the file and send the emails only once", async () => {
+    const s3Event = createS3Event("test-no-attachments.eml", uuidv4());
     const response = await handler(s3Event);
     expect(response.statusCode).toEqual(200);
-    expect(response.body).toContain("Sent 7 out of 7 email(s) successfully");
+    expect(response.body).toContain("Sent 1 out of 1 email(s) successfully");
+
+    // Using the same S3 event should not sent the email again
+    const response2 = await handler(s3Event);
+    expect(response2.statusCode).toEqual(200);
+    expect(response2.body).toContain("Event already processed");
   });
 });
