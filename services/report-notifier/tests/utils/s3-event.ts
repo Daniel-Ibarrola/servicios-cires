@@ -1,6 +1,6 @@
 import { S3Event } from "aws-lambda";
 
-export const createS3Event = (objectKey: string): S3Event => ({
+export const createS3Event = (objectKey: string, etag?: string): S3Event => ({
   Records: [
     {
       eventVersion: "2.1",
@@ -32,7 +32,7 @@ export const createS3Event = (objectKey: string): S3Event => ({
         object: {
           key: objectKey,
           size: 241,
-          eTag: "2a0416ba70673064f9c86b5c413129c7",
+          eTag: etag ?? "2a0416ba70673064f9c86b5c413129c7",
           sequencer: "006874474B8B9A4297",
         },
       },

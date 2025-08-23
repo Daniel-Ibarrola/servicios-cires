@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createTestEml } from "../utils/create-test-eml";
-import { removeEmailHeaders, replaceTo } from "../../src";
+
+import { removeEmailHeaders, replaceTo } from "../../src/email";
 
 describe("removeEmailHeaders", () => {
   it("Should remove the From header line if it exists", () => {
