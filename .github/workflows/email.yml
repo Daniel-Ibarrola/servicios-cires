@@ -1,0 +1,44 @@
+name: Email Infra CD
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - .github/workflows/email.yml
+      - infrastructure/global/email/**
+
+  pull_request:
+    paths:
+      - .github/workflows/email.yml
+      - infrastructure/global/email/**
+
+jobs:
+
+  deploy-email-infra:
+    name: Deploy Email Infra
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+          terraform_version: 1.12.2
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: infrastructure/global/email
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+        working-directory: infrastructure/global/email
+
+      - name: Terraform Apply
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
+        working-directory: infrastructure/global/email
