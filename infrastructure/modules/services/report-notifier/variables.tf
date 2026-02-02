@@ -1,19 +1,25 @@
 variable "bucket_name" {
   description = "The name of the bucket used to store reports"
-  type = string
+  type        = string
 }
 
 variable "environment" {
   description = "The name of the environment, e.g 'prod'"
-  type = string
+  type        = string
 }
 
 variable "verified_sender" {
   description = "The verified email address to send the emails"
-  type = string
+  type        = string
 }
 
 variable "source_code_hash" {
   description = "Base64-encoded SHA256 hash of the Lambda deployment package."
   type        = string
+}
+
+variable "enable_bucket_lifecycle" {
+  description = "Whether to enable lifecycle configuration for the S3 bucket"
+  type        = bool
+  default     = true
 }

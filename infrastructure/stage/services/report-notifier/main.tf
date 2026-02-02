@@ -33,4 +33,5 @@ module "report-notifier" {
   environment = "stage"
   verified_sender = "test@servicios-cires.net"
   source_code_hash = var.source_code_hash
+  enable_bucket_lifecycle = false
 }

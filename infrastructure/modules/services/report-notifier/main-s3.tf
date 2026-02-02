@@ -15,10 +15,10 @@ resource "aws_s3_bucket" "earthquake_reports" {
 }
 
 resource "aws_s3_bucket_public_access_block" "public_access" {
-  bucket = aws_s3_bucket.earthquake_reports.id
-  block_public_acls = true
-  block_public_policy = true
-  ignore_public_acls = true
+  bucket                  = aws_s3_bucket.earthquake_reports.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
@@ -42,16 +42,18 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "bucket_lifecycle" {
+  count = var.enable_bucket_lifecycle ? 1 : 0
+
   bucket = aws_s3_bucket.earthquake_reports.id
 
   rule {
-    id = "delete-old-reports"
+    id     = "delete-old-reports"
     status = "Enabled"
 
     filter {}
 
     expiration {
-      days = 30  # Delete objects after 30 days
+      days = 30 # Delete objects after 30 days
     }
   }
 }
