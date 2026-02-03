@@ -16,6 +16,11 @@ on:
         type: boolean
         default: false
         description: "Whether to run terraform apply"
+      terraform-variables:
+        required: false
+        type: string
+        default: ""
+        description: "Additional terraform variables in -var='key=value' format"
     secrets:
       ROLE_ARN:
         required: true
@@ -51,7 +56,7 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -out=tfplan
+        run: terraform plan -no-color -out=tfplan ${{ inputs.terraform-variables }}
         working-directory: ${{ inputs.working-directory }}
 
       - name: Add Plan to PR Comment
@@ -82,5 +87,5 @@ jobs:
 
       - name: Terraform Apply
         if: ${{ inputs.apply }}
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve tfplan ${{ inputs.terraform-variables }}
         working-directory: ${{ inputs.working-directory }}
