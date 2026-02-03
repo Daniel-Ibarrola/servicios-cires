@@ -25,8 +25,8 @@ permissions:
   pull-requests: write  # Required to comment on pull requests
 
 jobs:
-  report-notifier-ci-cd:
-    name: Test, Build and Deploy Report Notifier
+  test:
+    name: Run Unit Tests
     runs-on: ubuntu-latest
 
     environment:
@@ -59,6 +59,16 @@ jobs:
         working-directory: ./services/report-notifier
         run: npm run test:ci
 
+  build:
+    name: Build and Package Lambda Function
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref_name == 'main' && 'prod' || 'stage' }}
+    outputs:
+      source_code_hash: ${{ steps.calc_hash.outputs.hash }}
+
+    steps:
       - name: Build Code
         working-directory: ./services/report-notifier
         run: npm run build
@@ -66,8 +76,9 @@ jobs:
       - name: Package Lambda function
         run: zip -j function.zip services/report-notifier/dist/*
 
-      - name: Calculate Lambda source hash and set as TF_VAR
-        run: echo "TF_VAR_source_code_hash=$(openssl dgst -sha256 -binary function.zip | base64)" >> $GITHUB_ENV
+      - name: Calculate Lambda source hash
+        id: calc_hash
+        run: echo "hash=$(openssl dgst -sha256 -binary function.zip | base64)" >> $GITHUB_OUTPUT
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -77,6 +88,15 @@ jobs:
 
       - name: Upload artifact to S3
         run: aws s3 cp function.zip s3://${{ vars.S3_ARTIFACT_BUCKET }}/report-notifier.zip
+
+  deploy:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    environment:
+      name: ${{ github.ref_name == 'main' && 'prod' || 'stage' }}
+
+    steps:
       - name: Set Terraform Working Directory and Log Message
         id: set-vars
         run: |
@@ -96,7 +116,7 @@ jobs:
               echo "TF_DIR=infrastructure/stage/services/report-notifier" >> $GITHUB_ENV
               echo "LOG_MESSAGE=Applying for STAGE environment" >> $GITHUB_ENV
             fi
-          fi
+          fi  
 
       - name: Log Intent
         run: echo "${{ env.LOG_MESSAGE }}"
@@ -120,42 +140,10 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -out=tfplan
+        run: terraform plan -no-color -out=tfplan var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"
         working-directory: ${{ env.TF_DIR }}
-
-      - name: Add Plan to PR Comment
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const botComment = comments.find(comment => {
-              return comment.user.type === 'Bot' && comment.body.includes('Terraform Plan')
-            });
-            const planOutput = `## Terraform Plan for \`${process.env.TF_DIR}\`
-            \`\`\`terraform\n${{ steps.plan.outputs.stdout || 'No changes.' }}\n\`\`\`
-            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: planOutput
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: planOutput
-              });
-            }
 
       - name: Terraform Apply
         if: github.event_name == 'push'
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve tfplan var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"
         working-directory: ${{ env.TF_DIR }}
