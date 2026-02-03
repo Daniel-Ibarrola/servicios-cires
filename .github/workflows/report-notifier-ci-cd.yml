@@ -104,45 +104,11 @@ jobs:
         run: aws s3 cp function.zip s3://${{ vars.S3_ARTIFACT_BUCKET }}/report-notifier.zip
 
   deploy:
-    name: Deploy Infrastructure
-    runs-on: ubuntu-latest
-    needs: [test, build]
-    environment:
-      name: ${{ github.ref_name == 'main' && 'prod' || 'stage' }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set Terraform Working Directory and Log Message
-        id: set-vars
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            if [[ "${{ github.base_ref }}" == "main" ]]; then
-              echo "TF_DIR=infrastructure/prod/services/report-notifier" >> $GITHUB_ENV
-              echo "LOG_MESSAGE=Planning for PRODUCTION environment (Pull Request)" >> $GITHUB_ENV
-            elif [[ "${{ github.base_ref }}" == "develop" ]]; then
-              echo "TF_DIR=infrastructure/stage/services/report-notifier" >> $GITHUB_ENV
-              echo "LOG_MESSAGE=Planning for STAGE environment (Pull Request)" >> $GITHUB_ENV
-            fi
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
-            if [[ "${{ github.ref_name }}" == "main" ]]; then
-              echo "TF_DIR=infrastructure/prod/services/report-notifier" >> $GITHUB_ENV
-              echo "LOG_MESSAGE=Applying for PRODUCTION environment" >> $GITHUB_ENV
-            elif [[ "${{ github.ref_name }}" == "develop" ]]; then
-              echo "TF_DIR=infrastructure/stage/services/report-notifier" >> $GITHUB_ENV
-              echo "LOG_MESSAGE=Applying for STAGE environment" >> $GITHUB_ENV
-            fi
-          fi  
-
-      - name: Log Intent
-        run: echo "${{ env.LOG_MESSAGE }}"
-
-#      - name: Run Terraform
-#        uses: ./.github/workflows/terraform.yml
-#        with:
-#          working-directory: ${{ env.TF_DIR }}
-#          apply: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-#          terraform-variables: '-var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"'
-#        secrets:
-#          ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
+    needs: [ test, build ]
+    uses: ./.github/workflows/terraform.yml
+    with:
+      working-directory: ${{ github.ref_name == 'main' && 'infrastructure/prod/services/report-notifier' || 'infrastructure/stage/services/report-notifier' }}
+      apply: ${{ github.event_name == 'push' }}
+      terraform-variables: '-var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"'
+    secrets:
+      ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
