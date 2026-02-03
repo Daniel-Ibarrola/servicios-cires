@@ -157,10 +157,10 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -out=tfplan var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"
+        run: terraform plan -no-color -out=tfplan -var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"
         working-directory: ${{ env.TF_DIR }}
 
       - name: Terraform Apply
         if: github.event_name == 'push'
-        run: terraform apply -auto-approve tfplan var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"
+        run: terraform apply -auto-approve tfplan -var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"
         working-directory: ${{ env.TF_DIR }}
