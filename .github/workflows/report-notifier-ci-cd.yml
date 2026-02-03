@@ -138,11 +138,11 @@ jobs:
       - name: Log Intent
         run: echo "${{ env.LOG_MESSAGE }}"
 
-      - name: Run Terraform
-        uses: ./.github/workflows/terraform.yml
-        with:
-          working-directory: ${{ env.TF_DIR }}
-          apply: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          terraform-variables: '-var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"'
-        secrets:
-          ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
+#      - name: Run Terraform
+#        uses: ./.github/workflows/terraform.yml
+#        with:
+#          working-directory: ${{ env.TF_DIR }}
+#          apply: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+#          terraform-variables: '-var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"'
+#        secrets:
+#          ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
