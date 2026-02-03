@@ -24,6 +24,10 @@ permissions:
   contents: read        # Required to check out the repository's code
   pull-requests: write  # Required to comment on pull requests
 
+env:
+  ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
+  AWS_REGION: us-east-1
+
 jobs:
   test:
     name: Run Unit Tests
@@ -35,10 +39,6 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
-
-    env:
-      ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
-      AWS_REGION: us-east-1
 
     steps:
       - name: Checkout repository
