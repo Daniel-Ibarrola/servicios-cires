@@ -17,6 +17,11 @@ env:
     ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
     AWS_REGION: us-east-1
 
+permissions:
+  id-token: write       # Required for OIDC authentication with AWS
+  contents: read        # Required to check out the repository's code
+  pull-requests: write  # Required to comment on pull requests
+
 jobs:
   deploy-email-infra:
     name: Deploy Email Infra
