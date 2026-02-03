@@ -225,6 +225,59 @@ data "aws_iam_policy_document" "terraform_permissions" {
     ]
     resources = ["*"]
   }
+
+  statement {
+    sid    = "SNS"
+    effect = "Allow"
+    actions = [
+      "sns:CreateTopic",
+      "sns:GetTopicAttributes",
+      "sns:ListTopics",
+      "sns:DeleteTopic",
+      "sns:SetTopicAttributes",
+      "sns:Subscribe",
+      "sns:Unsubscribe"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "SES"
+    effect = "Allow"
+    actions = [
+      "ses:GetIdentityVerificationAttributes",
+      "ses:GetIdentityDkimAttributes",
+      "ses:GetIdentityNotificationAttributes",
+      "ses:SetIdentityNotificationTopic",
+      "ses:SetIdentityHeadersInNotificationsEnabled",
+      "ses:VerifyDomainIdentity",
+      "ses:VerifyDomainDkim",
+      "ses:DeleteIdentity",
+      "ses:DescribeReceiptRuleSet",
+      "ses:CreateReceiptRuleSet",
+      "ses:DeleteReceiptRuleSet",
+      "ses:DescribeReceiptRule",
+      "ses:CreateReceiptRule",
+      "ses:DeleteReceiptRule",
+      "ses:UpdateReceiptRule",
+      "ses:SetActiveReceiptRuleSet",
+      "ses:DescribeActiveReceiptRuleSet"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "Route53"
+    effect = "Allow"
+    actions = [
+      "route53:GetHostedZone",
+      "route53:ListHostedZones",
+      "route53:ChangeResourceRecordSets",
+      "route53:ListResourceRecordSets",
+      "route53:GetChange"
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "terraform_permissions_policy" {
