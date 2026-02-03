@@ -7,6 +7,10 @@ on:
         required: true
         type: string
         description: "The directory where terraform commands should run"
+      source-code-hash:
+        required: false
+        type: string
+        description: "Lambda source code hash"
       terraform-version:
         required: false
         type: string
@@ -28,6 +32,8 @@ jobs:
       id-token: write
       contents: read
       pull-requests: write
+    env:
+      TF_VAR_source_code_hash: ${{ inputs.source-code-hash }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
