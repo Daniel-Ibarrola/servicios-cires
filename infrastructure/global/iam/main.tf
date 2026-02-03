@@ -192,7 +192,10 @@ data "aws_iam_policy_document" "terraform_permissions" {
       "iam:PassRole",
       "iam:GetPolicyVersion",
       "iam:ListRolePolicies",
-      "iam:ListAttachedRolePolicies"
+      "iam:ListAttachedRolePolicies",
+      "iam:GetOpenIDConnectProvider",
+      "iam:DeleteOpenIDConnectProvider",
+      "iam:UpdateOpenIDConnectProviderThumbprint"
     ]
     resources = ["*"]
   }
