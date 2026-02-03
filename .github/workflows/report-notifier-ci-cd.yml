@@ -51,6 +51,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: services/report-notifier/package-lock.json
 
+      - name: Hello World
+        run: echo "Hello, world!"
+
       - name: Install Dependencies
         working-directory: ./services/report-notifier
         run: npm install
