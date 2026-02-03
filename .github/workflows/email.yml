@@ -13,8 +13,11 @@ on:
       - .github/workflows/email.yml
       - infrastructure/global/email/**
 
-jobs:
+env:
+    ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
+    AWS_REGION: us-east-1
 
+jobs:
   deploy-email-infra:
     name: Deploy Email Infra
     runs-on: ubuntu-latest
