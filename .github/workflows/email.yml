@@ -1,0 +1,28 @@
+name: Email Infra CD
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - .github/workflows/email.yml
+      - infrastructure/global/email/**
+
+  pull_request:
+    paths:
+      - .github/workflows/email.yml
+      - infrastructure/global/email/**
+
+permissions:
+  id-token: write       # Required for OIDC authentication with AWS
+  contents: read        # Required to check out the repository's code
+  pull-requests: write  # Required to comment on pull requests
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/terraform.yml
+    with:
+      working-directory: infrastructure/global/email
+      apply: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    secrets:
+      ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}

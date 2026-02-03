@@ -1,0 +1,28 @@
+name: IAM Infra CD
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - .github/workflows/iam.yml
+      - infrastructure/global/iam/**
+
+  pull_request:
+    paths:
+      - .github/workflows/iam.yml
+      - infrastructure/global/iam/**
+
+permissions:
+  id-token: write       # Required for OIDC authentication with AWS
+  contents: read        # Required to check out the repository's code
+  pull-requests: write  # Required to comment on pull requests
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/terraform.yml
+    with:
+      working-directory: infrastructure/global/iam
+      apply: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    secrets:
+      ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
