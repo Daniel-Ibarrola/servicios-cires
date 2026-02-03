@@ -12,6 +12,9 @@ on:
       - 'services/report-notifier/**'
       - '.github/workflows/report-notifier-ci-cd.yml'
   pull_request:
+    branches:
+      - main
+      - develop
     paths:
       - 'infrastructure/modules/services/report-notifier/**'
       - 'infrastructure/prod/services/report-notifier/**'
