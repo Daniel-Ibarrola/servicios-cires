@@ -195,7 +195,8 @@ data "aws_iam_policy_document" "terraform_permissions" {
       "iam:ListAttachedRolePolicies",
       "iam:GetOpenIDConnectProvider",
       "iam:DeleteOpenIDConnectProvider",
-      "iam:UpdateOpenIDConnectProviderThumbprint"
+      "iam:UpdateOpenIDConnectProviderThumbprint",
+      "iam:ListAttachedUserPolicies"
     ]
     resources = ["*"]
   }
@@ -239,7 +240,8 @@ data "aws_iam_policy_document" "terraform_permissions" {
       "sns:DeleteTopic",
       "sns:SetTopicAttributes",
       "sns:Subscribe",
-      "sns:Unsubscribe"
+      "sns:Unsubscribe",
+      "SNS:ListTagsForResource"
     ]
     resources = ["*"]
   }
