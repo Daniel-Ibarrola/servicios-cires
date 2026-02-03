@@ -87,5 +87,5 @@ jobs:
 
       - name: Terraform Apply
         if: ${{ inputs.apply }}
-        run: terraform apply -auto-approve tfplan ${{ inputs.terraform-variables }}
+        run: terraform apply -auto-approve tfplan
         working-directory: ${{ inputs.working-directory }}
