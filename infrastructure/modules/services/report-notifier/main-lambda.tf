@@ -91,16 +91,16 @@ resource "aws_lambda_function" "notifier" {
   role          = aws_iam_role.lambda_execution.arn
   handler       = "index.handler"
   runtime       = "nodejs22.x"
-  timeout = 30
+  timeout       = 30
 
-  s3_bucket = aws_s3_bucket.report_notifier_source_code.bucket
-  s3_key = "report-notifier.zip"
+  s3_bucket        = aws_s3_bucket.report_notifier_source_code.bucket
+  s3_key           = "report-notifier.zip"
   source_code_hash = var.source_code_hash
 
   environment {
     variables = {
-      ENVIRONMENT = var.environment
-      VERIFIED_SENDER = var.verified_sender
+      ENVIRONMENT              = var.environment
+      VERIFIED_SENDER          = var.verified_sender
       EVENT_TRACKER_TABLE_NAME = aws_dynamodb_table.event_tracker.name
     }
   }
