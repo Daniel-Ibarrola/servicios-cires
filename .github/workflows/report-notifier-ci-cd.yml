@@ -69,6 +69,9 @@ jobs:
       source_code_hash: ${{ steps.calc_hash.outputs.hash }}
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Build Code
         working-directory: ./services/report-notifier
         run: npm run build
@@ -97,6 +100,9 @@ jobs:
       name: ${{ github.ref_name == 'main' && 'prod' || 'stage' }}
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set Terraform Working Directory and Log Message
         id: set-vars
         run: |
