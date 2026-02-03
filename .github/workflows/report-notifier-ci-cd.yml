@@ -138,29 +138,11 @@ jobs:
       - name: Log Intent
         run: echo "${{ env.LOG_MESSAGE }}"
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Run Terraform
+        uses: ./.github/workflows/terraform.yml
         with:
-          role-to-assume: ${{ env.ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-          terraform_version: 1.12.2
-
-      - name: Terraform Init
-        id: init
-        run: terraform init
-        working-directory: ${{ env.TF_DIR }}
-
-      - name: Terraform Plan
-        id: plan
-        run: terraform plan -no-color -out=tfplan -var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"
-        working-directory: ${{ env.TF_DIR }}
-
-      - name: Terraform Apply
-        if: github.event_name == 'push'
-        run: terraform apply -auto-approve tfplan -var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"
-        working-directory: ${{ env.TF_DIR }}
+          working-directory: ${{ env.TF_DIR }}
+          apply: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          terraform-variables: '-var="source_code_hash=${{ needs.build.outputs.source_code_hash }}"'
+        secrets:
+          ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
