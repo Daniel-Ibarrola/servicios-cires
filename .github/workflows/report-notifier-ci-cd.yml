@@ -72,6 +72,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.6.0'
+          cache: 'npm'
+          cache-dependency-path: services/report-notifier/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ./services/report-notifier
+        run: npm install
+
       - name: Build Code
         working-directory: ./services/report-notifier
         run: npm run build
