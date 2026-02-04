@@ -48,7 +48,7 @@ jobs:
     needs: build
     with:
       working-directory: infrastructure/global/email
-      apply: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      apply: ${{ github.event_name == 'push' }}
       terraform-variables: '-var="source_code_hash=${{ needs.build.outputs.source-code-hash }}"'
     secrets:
       ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
