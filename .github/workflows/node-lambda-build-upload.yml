@@ -1,0 +1,74 @@
+name: Lambda Build & Upload
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+        description: 'The directory where the Lambda source code is located'
+      s3-bucket:
+        required: true
+        type: string
+        description: 'The S3 bucket to upload the zip file to'
+      artifact-name:
+        required: true
+        type: string
+        description: 'The name of the zip file (e.g., report-notifier.zip)'
+      node-version:
+        required: false
+        type: string
+        default: '22.6.0'
+        description: 'The version of Node.js to use'
+      aws-region:
+        required: false
+        type: string
+        default: 'us-east-1'
+    secrets:
+      role-arn:
+        required: true
+        description: 'The AWS IAM Role ARN to assume'
+    outputs:
+      source-code-hash:
+        description: "The base64-encoded SHA256 hash of the zip file"
+        value: ${{ jobs.build.outputs.source_code_hash }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      source_code_hash: ${{ steps.calc_hash.outputs.hash }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: npm install
+
+      - name: Build Code
+        working-directory: ${{ inputs.working-directory }}
+        run: npm run build
+
+      - name: Package Lambda function
+        run: zip -j function.zip ${{ inputs.working-directory }}/dist/*
+
+      - name: Calculate Lambda source hash
+        id: calc_hash
+        run: echo "hash=$(openssl dgst -sha256 -binary function.zip | base64)" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Upload artifact to S3
+        run: aws s3 cp function.zip s3://${{ inputs.s3-bucket }}/${{ inputs.artifact-name }}
