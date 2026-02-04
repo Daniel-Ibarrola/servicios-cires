@@ -13,7 +13,7 @@ resource "aws_lambda_function" "bounce_processor" {
   runtime       = "nodejs22.x"
 
   s3_bucket        = aws_s3_bucket.bounce_processor_source_code.bucket
-  s3_key           = "bounce-processor.zip"
+  s3_key           = "email-processor.zip"
   source_code_hash = var.source_code_hash
 
   environment {
