@@ -1,36 +1,45 @@
 # Email Service Module
 
 ## Overview
-This module configures AWS Simple Email Service (SES) for the servicios-cires.net domain. It sets up the necessary domain verification and DKIM records to ensure proper email delivery and authentication.
+This module configures AWS Simple Email Service (SES) for the `servicios-cires.net` domain and sets up the infrastructure for handling email notifications and incoming mail.
+
+Key features:
+- Domain verification and DKIM setup.
+- Bounce and Complaint notification routing via SNS.
+- Human-readable bounce processing via a Lambda function.
+- Incoming email reception and forwarding to SNS.
 
 ## Resources Created
-- **SES Domain Identity**: Configures the servicios-cires.net domain for use with AWS SES
-- **Domain Verification**: Sets up DNS records to verify domain ownership
-- **DKIM Configuration**: Enables DomainKeys Identified Mail (DKIM) for improved email deliverability and security
+
+### SES Configuration
+- **SES Domain Identity**: Configures `servicios-cires.net`.
+- **Domain Verification & DKIM**: Automatic DNS records for authentication.
+- **Identity Notification Topics**: Links SES Bounce and Complaint events to SNS topics.
+- **Receipt Rule Set**: Handles incoming emails sent to the domain.
+
+### Infrastructure & Processing
+- **SNS Topics**:
+    - `ses-bounces`: Raw bounce notifications.
+    - `ses-complaints`: Raw complaint notifications.
+    - `ses-readable-notifications`: Formatted, human-readable alerts.
+    - `email-replies`: Incoming emails forwarded from SES.
+- **Lambda Function (`ses-bounce-processor`)**: Processes raw bounces from `ses-bounces` and publishes readable versions to `ses-readable-notifications`.
+- **S3 Bucket (`cires-ses-bouce-processor-code`)**: Stores the deployment package for the bounce processor Lambda.
+- **IAM Roles & Policies**: Necessary permissions for the Lambda to log to CloudWatch and publish to SNS.
 
 ## Usage
-This module is used as a foundation for email sending capabilities in the project. Other services that need to send emails should reference the SES configuration created by this module.
 
-```hcl
-module "ses" {
-  source  = "cloudposse/ses/aws"
-  version = "0.25.1"
+This module is the central email hub. Other services should:
+1. Use SES for sending emails from the verified domain.
+2. Subscribe to `ses-readable-notifications` for human alerts.
+3. Subscribe to `ses-bounces` or `ses-complaints` for automated processing of delivery failures.
 
-  domain        = "servicios-cires.net"
-  zone_id       = "Z06509101Z22NMKSMXDLL"
-  verify_dkim   = true
-  verify_domain = true
-
-  ses_group_enabled = false
-  ses_user_enabled  = false
-
-  namespace   = "cires"
-  environment = "us-east-1"
-}
-```
+## Variables
+| Name | Description | Type |
+|------|-------------|------|
+| `source_code_hash` | Base64-encoded SHA256 hash of the Lambda deployment package. | `string` |
 
 ## Important Notes
-- The module uses the cloudposse/ses/aws module from the Terraform Registry
-- Both domain verification and DKIM verification are enabled
-- No SES users or groups are created by this module
-- The configuration is global and used by services across all environments
+- The module uses the `cloudposse/ses/aws` module (v0.25.1).
+- MX records are automatically configured to point to AWS inbound SMTP.
+- The `ses-bounce-processor` Lambda expects a `bounce-processor.zip` file in the configured S3 bucket.
