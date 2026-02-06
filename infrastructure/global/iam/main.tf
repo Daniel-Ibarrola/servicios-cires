@@ -196,7 +196,10 @@ data "aws_iam_policy_document" "terraform_permissions" {
       "iam:GetOpenIDConnectProvider",
       "iam:DeleteOpenIDConnectProvider",
       "iam:UpdateOpenIDConnectProviderThumbprint",
-      "iam:ListAttachedUserPolicies"
+      "iam:ListAttachedUserPolicies",
+      "iam:PutRolePolicy",
+      "iam:GetRolePolicy",
+      "iam:DeleteRolePolicy"
     ]
     resources = ["*"]
   }
@@ -266,7 +269,8 @@ data "aws_iam_policy_document" "terraform_permissions" {
       "ses:DeleteReceiptRule",
       "ses:UpdateReceiptRule",
       "ses:SetActiveReceiptRuleSet",
-      "ses:DescribeActiveReceiptRuleSet"
+      "ses:DescribeActiveReceiptRuleSet",
+      "SNS:GetSubscriptionAttributes"
     ]
     resources = ["*"]
   }

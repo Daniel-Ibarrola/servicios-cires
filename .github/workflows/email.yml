@@ -7,11 +7,13 @@ on:
     paths:
       - .github/workflows/email.yml
       - infrastructure/global/email/**
+      - services/email-processor/**
 
   pull_request:
     paths:
       - .github/workflows/email.yml
       - infrastructure/global/email/**
+      - services/email-processor/**
 
 permissions:
   id-token: write       # Required for OIDC authentication with AWS
@@ -19,10 +21,34 @@ permissions:
   pull-requests: write  # Required to comment on pull requests
 
 jobs:
+
+  test:
+    name: Unit Tests
+    uses: ./.github/workflows/node-unit-tests.yml
+    with:
+      working-directory: services/email-processor
+      node-version: '22.6.0'
+
+  build:
+    name: Build and Upload Artifact
+    uses: ./.github/workflows/node-lambda-build-upload.yml
+    needs: test
+    with:
+      working-directory: services/email-processor
+      s3-bucket: cires-ses-bouce-processor-code
+      artifact-name: email-processor.zip
+      node-version: '22.6.0'
+      aws-region: 'us-east-1'
+    secrets:
+      role-arn: ${{ secrets.AWS_IAM_ROLE_ARN }}
+
   deploy:
+    name: Deploy to AWS
     uses: ./.github/workflows/terraform.yml
+    needs: build
     with:
       working-directory: infrastructure/global/email
-      apply: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      apply: ${{ github.event_name == 'push' }}
+      terraform-variables: '-var="source_code_hash=${{ needs.build.outputs.source-code-hash }}"'
     secrets:
       ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}

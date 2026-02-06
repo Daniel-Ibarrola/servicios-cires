@@ -1,0 +1,40 @@
+name: Node Unit Tests
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+        description: 'The directory where the Node.js project is located'
+      node-version:
+        required: false
+        type: string
+        default: '22.6.0'
+        description: 'The version of Node.js to use'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: npm install
+
+      - name: Lint and Typecheck
+        working-directory: ${{ inputs.working-directory }}
+        run: npm run type-check && npm run lint
+
+      - name: Run Unit Tests
+        working-directory: ${{ inputs.working-directory }}
+        run: npm run test:ci
