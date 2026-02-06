@@ -8,8 +8,36 @@ import {
   type MockInstance,
 } from "vitest";
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
-import { SNSEvent } from "aws-lambda";
+import { SNSEvent, SNSEventRecord } from "aws-lambda";
 import { handler } from "../src";
+
+/**
+ * Helper function to create a properly typed SNSEvent for testing
+ */
+function createSNSEvent(messages: string[]): SNSEvent {
+  const records: SNSEventRecord[] = messages.map((message) => ({
+    EventVersion: "1.0",
+    EventSubscriptionArn: "arn:aws:sns:us-east-1:123456789012:test-topic",
+    EventSource: "aws:sns",
+    Sns: {
+      SignatureVersion: "1",
+      Timestamp: "2026-01-31T23:55:12.000Z",
+      Signature: "test-signature",
+      SigningCertUrl: "https://sns.us-east-1.amazonaws.com/cert.pem",
+      MessageId: "test-message-id",
+      Message: message,
+      MessageAttributes: {},
+      Type: "Notification",
+      UnsubscribeUrl: "https://sns.us-east-1.amazonaws.com/unsubscribe",
+      TopicArn: "arn:aws:sns:us-east-1:123456789012:test-topic",
+      Subject: "Amazon SES Email Event Notification",
+    },
+  }));
+
+  return {
+    Records: records,
+  };
+}
 
 let snsSendSpy: MockInstance;
 
@@ -47,17 +75,9 @@ describe("Email Processor Handler - Unit Tests", () => {
       },
     };
 
-    const event: Partial<SNSEvent> = {
-      Records: [
-        {
-          Sns: {
-            Message: JSON.stringify(sesBounceMessage),
-          },
-        } as any,
-      ],
-    };
+    const event = createSNSEvent([JSON.stringify(sesBounceMessage)]);
 
-    await handler(event as SNSEvent);
+    await handler(event);
 
     expect(snsSendSpy).toHaveBeenCalledTimes(1);
 
@@ -78,17 +98,9 @@ describe("Email Processor Handler - Unit Tests", () => {
       delivery: { timestamp: "2026-01-31T23:55:12.000Z" },
     };
 
-    const event: Partial<SNSEvent> = {
-      Records: [
-        {
-          Sns: {
-            Message: JSON.stringify(sesDeliveryMessage),
-          },
-        } as any,
-      ],
-    };
+    const event = createSNSEvent([JSON.stringify(sesDeliveryMessage)]);
 
-    await handler(event as SNSEvent);
+    await handler(event);
 
     expect(snsSendSpy).not.toHaveBeenCalled();
   });
@@ -108,14 +120,9 @@ describe("Email Processor Handler - Unit Tests", () => {
         mail: { messageId: id, commonHeaders: { subject: `Test ${id}` } },
       });
 
-    const event: Partial<SNSEvent> = {
-      Records: [
-        { Sns: { Message: bounceMsg("1") } } as any,
-        { Sns: { Message: bounceMsg("2") } } as any,
-      ],
-    };
+    const event = createSNSEvent([bounceMsg("1"), bounceMsg("2")]);
 
-    await handler(event as SNSEvent);
+    await handler(event);
 
     expect(snsSendSpy).toHaveBeenCalledTimes(2);
   });
