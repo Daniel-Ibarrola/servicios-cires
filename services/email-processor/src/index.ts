@@ -1,8 +1,30 @@
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
-import { SNSEvent } from "aws-lambda";
+import { SNSEvent, SESMessage } from "aws-lambda";
 
 const sns = new SNSClient({ region: process.env.AWS_REGION });
 const READABLE_TOPIC_ARN = process.env.READABLE_TOPIC_ARN!;
+
+/**
+ * Represents the SES notification payload when delivered via SNS.
+ * The SNS 'Message' field contains this JSON structure.
+ */
+interface SESNotification extends SESMessage {
+  notificationType: "Bounce" | "Complaint" | "Delivery";
+  bounce: {
+    bounceType: string;
+    bounceSubType: string;
+    bouncedRecipients: Array<{
+      emailAddress: string;
+      action?: string;
+      status?: string;
+      diagnosticCode?: string;
+    }>;
+    timestamp: string;
+    feedbackId: string;
+    remoteMtaIp?: string;
+    reportingMTA?: string;
+  };
+}
 
 /**
  * AWS Lambda handler that processes SES bounce notifications received via SNS.
@@ -11,7 +33,7 @@ const READABLE_TOPIC_ARN = process.env.READABLE_TOPIC_ARN!;
  */
 export const handler = async (event: SNSEvent) => {
   for (const record of event.Records) {
-    const sesMessage = JSON.parse(record.Sns.Message);
+    const sesMessage = JSON.parse(record.Sns.Message) as SESNotification;
 
     if (sesMessage.notificationType === "Bounce") {
       const bounce = sesMessage.bounce;
@@ -19,7 +41,7 @@ export const handler = async (event: SNSEvent) => {
       const subject = mail.commonHeaders?.subject || "No Subject";
 
       const recipientList = bounce.bouncedRecipients
-        .map((r: any) => `- ${r.emailAddress}: ${r.diagnosticCode || r.status}`)
+        .map((r) => `- ${r.emailAddress}: ${r.diagnosticCode || r.status}`)
         .join("\n");
 
       const messageText = `
