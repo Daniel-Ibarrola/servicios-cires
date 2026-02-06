@@ -57,15 +57,41 @@ resource "aws_iam_role_policy" "bounce_processor_policy" {
   })
 }
 
-resource "aws_sns_topic_subscription" "lambda_to_raw" {
+resource "aws_sns_topic_subscription" "bounces_to_lambda" {
   topic_arn = aws_sns_topic.ses_bounces.arn
   protocol  = "lambda"
   endpoint  = aws_lambda_function.bounce_processor.arn
 }
 
-resource "aws_lambda_permission" "sns_to_lambda" {
+resource "aws_sns_topic_subscription" "complaints_to_lambda" {
+  topic_arn = aws_sns_topic.ses_complaints.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.bounce_processor.arn
+}
+
+resource "aws_sns_topic_subscription" "replies_to_lambda" {
+  topic_arn = aws_sns_topic.email_replies.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.bounce_processor.arn
+}
+
+resource "aws_lambda_permission" "bounces_to_lambda" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.bounce_processor.function_name
   principal     = "sns.amazonaws.com"
   source_arn    = aws_sns_topic.ses_bounces.arn
+}
+
+resource "aws_lambda_permission" "complaints_to_lambda" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.bounce_processor.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.ses_complaints.arn
+}
+
+resource "aws_lambda_permission" "replies_to_lambda" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.bounce_processor.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.email_replies.arn
 }

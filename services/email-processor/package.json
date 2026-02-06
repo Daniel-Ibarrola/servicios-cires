@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.982.0",
-    "@types/aws-lambda": "^8.10.160"
+    "@types/aws-lambda": "^8.10.160",
+    "dedent": "^1.7.1"
   }
 }

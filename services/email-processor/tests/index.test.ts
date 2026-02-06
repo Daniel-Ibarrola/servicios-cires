@@ -92,7 +92,88 @@ describe("Email Processor Handler - Unit Tests", () => {
     expect(command.input.Message).toContain("albertoj8902@gmail.com");
   });
 
-  it("should ignore non-bounce notification types like Delivery", async () => {
+  it("should parse a complaint event and publish a readable message to the second SNS topic", async () => {
+    snsSendSpy.mockResolvedValue({});
+
+    const sesComplaintMessage = {
+      notificationType: "Complaint",
+      complaint: {
+        complainedRecipients: [
+          {
+            emailAddress: "user@example.com",
+          },
+        ],
+        timestamp: "2026-01-31T23:55:12.000Z",
+        feedbackId: "feedback-123",
+        complaintFeedbackType: "abuse",
+        userAgent: "SomeUserAgent/1.0",
+      },
+      mail: {
+        messageId: "0100019c137a5d98-111111",
+        commonHeaders: {
+          subject: "Test Email Subject",
+        },
+      },
+    };
+
+    const event = createSNSEvent([JSON.stringify(sesComplaintMessage)]);
+
+    await handler(event);
+
+    expect(snsSendSpy).toHaveBeenCalledTimes(1);
+
+    const command = snsSendSpy.mock.calls[0][0] as PublishCommand;
+    expect(command.input.TopicArn).toBe(process.env.READABLE_TOPIC_ARN);
+    expect(command.input.Subject).toBe("[SES Alert] Complaint: Test Email Subject");
+    expect(command.input.Message).toContain("🚨 SES Complaint Notification");
+    expect(command.input.Message).toContain("abuse");
+    expect(command.input.Message).toContain("user@example.com");
+  });
+
+  it("should parse a received email (reply) event and publish a readable message", async () => {
+    snsSendSpy.mockResolvedValue({});
+
+    const sesReceivedMessage = {
+      notificationType: "Received",
+      receipt: {
+        timestamp: "2026-01-31T23:55:12.000Z",
+        processingTimeMillis: 123,
+        recipients: ["servicios-cires.net"],
+        spamVerdict: { status: "PASS" },
+        virusVerdict: { status: "PASS" },
+        spfVerdict: { status: "PASS" },
+        dkimVerdict: { status: "PASS" },
+        dmarcVerdict: { status: "PASS" },
+        action: {
+          type: "SNS",
+          topicArn: "arn:aws:sns:us-east-1:123456789012:email-replies",
+        },
+      },
+      mail: {
+        messageId: "0100019c137a5d98-222222",
+        commonHeaders: {
+          subject: "Re: Your inquiry",
+          from: ["customer@example.com"],
+          to: ["servicios-cires.net"],
+        },
+      },
+    };
+
+    const event = createSNSEvent([JSON.stringify(sesReceivedMessage)]);
+
+    await handler(event);
+
+    expect(snsSendSpy).toHaveBeenCalledTimes(1);
+
+    const command = snsSendSpy.mock.calls[0][0] as PublishCommand;
+    expect(command.input.TopicArn).toBe(process.env.READABLE_TOPIC_ARN);
+    expect(command.input.Subject).toBe("[SES] Reply: Re: Your inquiry");
+    expect(command.input.Message).toContain("📧 Email Received (Reply)");
+    expect(command.input.Message).toContain("customer@example.com");
+    expect(command.input.Message).toContain("Spam Verdict: PASS");
+  });
+
+  it("should ignore non-handled notification types like Delivery", async () => {
     const sesDeliveryMessage = {
       notificationType: "Delivery",
       delivery: { timestamp: "2026-01-31T23:55:12.000Z" },
