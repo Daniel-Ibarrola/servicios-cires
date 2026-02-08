@@ -55,10 +55,18 @@ jobs:
 
       - name: Build Code
         working-directory: ${{ inputs.working-directory }}
-        run: npm run build
+        run: |
+          npm run build
+          # Copy package files to dist to install production deps there
+          cp package.json package-lock.json dist/
+          cd dist
+          # Install only production dependencies (excludes devDependencies)
+          npm ci --omit=dev
 
       - name: Package Lambda function
-        run: zip -j function.zip ${{ inputs.working-directory }}/dist/*
+        working-directory: ${{ inputs.working-directory }}/dist
+        # Zip everything recursively (-r) from inside dist, including node_modules
+        run: zip -r ${{ github.workspace }}/function.zip .
 
       - name: Calculate Lambda source hash
         id: calc_hash
