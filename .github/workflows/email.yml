@@ -6,12 +6,14 @@ on:
       - develop
     paths:
       - .github/workflows/email.yml
+      - .github/workflows/node-lambda-build-upload.yml
       - infrastructure/global/email/**
       - services/email-processor/**
 
   pull_request:
     paths:
       - .github/workflows/email.yml
+      - .github/workflows/node-lambda-build-upload.yml
       - infrastructure/global/email/**
       - services/email-processor/**
 
