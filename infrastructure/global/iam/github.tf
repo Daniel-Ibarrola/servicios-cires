@@ -119,7 +119,8 @@ data "aws_iam_policy_document" "terraform_permissions" {
       "iam:ListAttachedUserPolicies",
       "iam:PutRolePolicy",
       "iam:GetRolePolicy",
-      "iam:DeleteRolePolicy"
+      "iam:DeleteRolePolicy",
+      "iam:ListPolicyVersions"
     ]
     resources = ["*"]
   }
