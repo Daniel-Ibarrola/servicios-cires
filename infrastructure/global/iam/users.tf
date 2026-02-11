@@ -72,20 +72,3 @@ resource "aws_iam_user_policy_attachment" "s3_upload_policy_attachment" {
   user       = aws_iam_user.s3_upload_user[each.key].name
   policy_arn = aws_iam_policy.s3_upload_policy[each.key].arn
 }
-
-# These blocks tell Terraform that the existing resources have moved to the new key-based structure.
-# This prevents Terraform from destroying the existing 'cires-reports-uploader' user.
-moved {
-  from = aws_iam_user.s3_upload_user
-  to   = aws_iam_user.s3_upload_user["cires-reports-uploader"]
-}
-
-moved {
-  from = aws_iam_policy.s3_upload_policy
-  to   = aws_iam_policy.s3_upload_policy["cires-reports-uploader"]
-}
-
-moved {
-  from = aws_iam_user_policy_attachment.s3_upload_policy_attachment
-  to   = aws_iam_user_policy_attachment.s3_upload_policy_attachment["cires-reports-uploader"]
-}
