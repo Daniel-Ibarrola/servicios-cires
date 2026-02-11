@@ -23,6 +23,6 @@ jobs:
     uses: ./.github/workflows/terraform.yml
     with:
       working-directory: infrastructure/global/iam
-      apply: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      apply: ${{ github.event_name == 'push' }}
     secrets:
       ROLE_ARN: ${{ secrets.AWS_IAM_ROLE_ARN }}
